@@ -167,15 +167,18 @@ class ImapService extends EventEmitter {
 
 	_createMailSummary(message) {
 		const headerPart = message.parts[0].body
-		const to = headerPart.to
+		let to = headerPart.to
 			.flatMap(to => addressparser(to))
 			// The address also contains the name, just keep the email
 			.map(addressObj => addressObj.address)
 
 		const from = headerPart.from.flatMap(from => addressparser(from))
 
+		if (to.includes("")){
+			to = headerPart["delivered-to"]
+		}
 		const subject = headerPart.subject[0]
-		const date = headerPart.date[0]
+		const date = headerPart.date ? headerPart.date[0] : new Date()
 		const {uid} = message.attributes
 
 		return Mail.create(to, from, date, subject, uid)
@@ -230,7 +233,7 @@ class ImapService extends EventEmitter {
 
 	async _getMailHeaders(uids) {
 		const fetchOptions = {
-			bodies: ['HEADER.FIELDS (FROM TO SUBJECT DATE)'],
+			bodies: ['HEADER'],
 			struct: false
 		}
 		const searchCriteria = [['UID', ...uids]]
